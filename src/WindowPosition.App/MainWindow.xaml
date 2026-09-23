@@ -1,0 +1,62 @@
+<Window x:Class="WindowPosition.App.MainWindow"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ Title="Window Position" Width="1180" Height="790" MinWidth="1000" MinHeight="700"
+ WindowStartupLocation="CenterScreen" Background="#F3F5FA" Foreground="#17233B" FontFamily="Yu Gothic UI, Segoe UI" FontSize="13"
+ Icon="Assets/app.ico">
+ <Grid Margin="28,22,28,18">
+  <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+  <Grid>
+   <TextBlock Text="WINDOW POSITION" FontSize="15" FontWeight="Bold" Foreground="#3563E9" VerticalAlignment="Center"/>
+   <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center"><Button x:Name="PauseButton" Content="一時停止" Click="OnPause"/><Button Content="トレイへ格納" Click="OnHide" Margin="0"/></StackPanel>
+  </Grid>
+  <Border Grid.Row="1" Background="#E8EEFE" CornerRadius="9" Padding="16,12" Margin="0,20,0,20">
+   <DockPanel><Button x:Name="CaptureButton" DockPanel.Dock="Right" Content="＋  ウィンドウをキャプチャ" Style="{StaticResource PrimaryButton}" Click="OnCapture" Margin="16,0,0,0"/><StackPanel VerticalAlignment="Center"><TextBlock Text="クリックするだけで登録" FontWeight="Bold"/><TextBlock Text="キャプチャ → 対象ウィンドウをクリック。Esc でキャンセルできます。" Foreground="#596B8E" Margin="0,3,0,0"/></StackPanel></DockPanel>
+  </Border>
+  <Grid Grid.Row="2">
+   <Grid.ColumnDefinitions><ColumnDefinition Width="370"/><ColumnDefinition Width="20"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+   <Border Background="White" CornerRadius="12" BorderBrush="#E0E5EF" BorderThickness="1" Padding="17">
+    <Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+     <DockPanel Margin="0,0,0,14"><TextBlock Text="登録ウィンドウ" FontSize="17" FontWeight="Bold"/><TextBlock x:Name="CountText" Text="0 件" HorizontalAlignment="Right" Foreground="#758198"/></DockPanel>
+     <ListBox x:Name="RuleList" Grid.Row="1" BorderThickness="0" Background="Transparent" HorizontalContentAlignment="Stretch" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.CanContentScroll="True" VirtualizingPanel.ScrollUnit="Item" PreviewMouseWheel="OnRuleListMouseWheel" MouseLeave="OnRuleListMouseLeave" SelectionChanged="OnSelectionChanged">
+      <ListBox.ItemContainerStyle><Style TargetType="ListBoxItem"><Setter Property="Padding" Value="0"/><Setter Property="Margin" Value="0,0,0,9"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ListBoxItem"><Border x:Name="Card" Background="#F7F9FC" BorderBrush="#E6EAF2" BorderThickness="1" CornerRadius="8" Padding="11"><ContentPresenter/></Border><ControlTemplate.Triggers><Trigger Property="IsSelected" Value="True"><Setter TargetName="Card" Property="Background" Value="#EDF2FF"/><Setter TargetName="Card" Property="BorderBrush" Value="#809DF1"/></Trigger><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Card" Property="BorderBrush" Value="#9BB0EB"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style></ListBox.ItemContainerStyle>
+      <ListBox.ItemTemplate><DataTemplate><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="42"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip="{Binding Title}"/><TextBlock Text="{Binding Summary}" FontSize="11" Foreground="#64738C" Margin="0,5,0,0"/><TextBlock Text="{Binding Status}" FontSize="11" Foreground="#3563A9" TextWrapping="Wrap" Margin="0,5,0,0"/></StackPanel><CheckBox Grid.Column="1" IsChecked="{Binding Enabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Content="ON" VerticalAlignment="Top" ToolTip="この項目の自動配置を有効にする"/></Grid></DataTemplate></ListBox.ItemTemplate>
+     </ListBox>
+     <TextBlock x:Name="EmptyText" Grid.Row="1" Text="まだ登録がありません。&#x0a;&#x0a;上のキャプチャボタンから&#x0a;最初のウィンドウを追加してください。" TextAlignment="Center" VerticalAlignment="Center" Foreground="#8490A5" LineHeight="24"/>
+     <TextBlock Grid.Row="2" Text="同じタイトルの複数ウィンドウは、すべて対象です。" TextWrapping="Wrap" FontSize="11" Foreground="#8993A6" Margin="0,12,0,0"/>
+    </Grid>
+   </Border>
+   <Border Grid.Column="2" Background="White" CornerRadius="12" BorderBrush="#E0E5EF" BorderThickness="1" Padding="22,18">
+    <Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+     <TextBlock Text="配置ルール" FontSize="17" FontWeight="Bold" Margin="0,0,0,14"/>
+     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"><StackPanel x:Name="EditorPanel" IsEnabled="False">
+      <TextBlock Text="ウィンドウタイトル" FontWeight="SemiBold" Margin="0,0,0,7"/><TextBox x:Name="TitleInput" AutomationProperties.Name="ウィンドウタイトル"/>
+      <Grid Margin="0,14,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="14"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+       <StackPanel><TextBlock Text="タイトルの一致条件" Margin="0,0,0,6"/><ComboBox x:Name="MatchInput" SelectedIndex="0"><ComboBoxItem Content="完全一致"/><ComboBoxItem Content="部分一致（含む）"/></ComboBox></StackPanel>
+       <StackPanel Grid.Column="2"><TextBlock Text="適用モード" Margin="0,0,0,6"/><ComboBox x:Name="ModeInput" SelectedIndex="0" SelectionChanged="OnModeChanged"><ComboBoxItem Content="初回起動時のみ"/><ComboBoxItem Content="常時追従"/></ComboBox></StackPanel>
+      </Grid>
+      <Border Background="#F5F7FB" CornerRadius="7" Padding="12" Margin="0,13,0,17"><TextBlock x:Name="ModeHelp" Text="新しく検出したウィンドウに一度だけ適用します。その後は自由に移動・リサイズできます。" TextWrapping="Wrap" Foreground="#61718A" FontSize="12"/></Border>
+      <DockPanel Margin="0,0,0,8"><TextBlock Text="位置とサイズ" FontWeight="SemiBold"/><TextBlock Text="画面上の物理ピクセル（px）" FontSize="11" Foreground="#8A95A9" HorizontalAlignment="Right"/></DockPanel>
+      <UniformGrid Columns="4"><StackPanel Margin="0,0,10,0"><TextBlock Text="X" Foreground="#6C7990" Margin="0,0,0,5"/><TextBox x:Name="XInput" AutomationProperties.Name="X座標"/></StackPanel><StackPanel Margin="0,0,10,0"><TextBlock Text="Y" Foreground="#6C7990" Margin="0,0,0,5"/><TextBox x:Name="YInput" AutomationProperties.Name="Y座標"/></StackPanel><StackPanel Margin="0,0,10,0"><TextBlock Text="幅" Foreground="#6C7990" Margin="0,0,0,5"/><TextBox x:Name="WidthInput" AutomationProperties.Name="幅"/></StackPanel><StackPanel><TextBlock Text="高さ" Foreground="#6C7990" Margin="0,0,0,5"/><TextBox x:Name="HeightInput" AutomationProperties.Name="高さ"/></StackPanel></UniformGrid>
+      <StackPanel Orientation="Horizontal" Margin="0,13,0,20"><Button Content="現在の位置を取り込む" Click="OnReadCurrent" Padding="12,7"/><TextBlock Text="※ 保存するまで反映しません" FontSize="11" Foreground="#8993A6" VerticalAlignment="Center"/></StackPanel>
+      <Border Height="1" Background="#EBEEF4" Margin="0,0,0,17"/>
+      <Grid>
+       <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+       <WrapPanel VerticalAlignment="Center" Margin="0,0,12,0"><Button Content="保存して適用" Style="{StaticResource PrimaryButton}" Click="OnSaveRule"/><Button Content="今すぐ適用" Click="OnApplyNow"/><Button Content="削除" Click="OnDelete" Foreground="#BC4554" Margin="0"/></WrapPanel>
+       <Grid Grid.Column="1" Width="112" Height="70" HorizontalAlignment="Right" ToolTip="現在のサイズのままモニターの端に移動し、位置を保存します。">
+        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
+        <Grid.RowDefinitions><RowDefinition/><RowDefinition/></Grid.RowDefinitions>
+        <Button x:Name="AlignUpButton" Grid.Column="1" Content="↑" Tag="Up" Click="OnAlignToEdge" Padding="0" Margin="2" FontSize="20" AutomationProperties.Name="モニターの上端に揃える" ToolTip="上端に揃えて保存"/>
+        <Button x:Name="AlignLeftButton" Grid.Row="1" Content="←" Tag="Left" Click="OnAlignToEdge" Padding="0" Margin="2" FontSize="20" AutomationProperties.Name="モニターの左端に揃える" ToolTip="左端に揃えて保存"/>
+        <Button x:Name="AlignDownButton" Grid.Row="1" Grid.Column="1" Content="↓" Tag="Down" Click="OnAlignToEdge" Padding="0" Margin="2" FontSize="20" AutomationProperties.Name="モニターの下端に揃える" ToolTip="下端に揃えて保存"/>
+        <Button x:Name="AlignRightButton" Grid.Row="1" Grid.Column="2" Content="→" Tag="Right" Click="OnAlignToEdge" Padding="0" Margin="2" FontSize="20" AutomationProperties.Name="モニターの右端に揃える" ToolTip="右端に揃えて保存"/>
+       </Grid>
+      </Grid>
+      <TextBlock Text="最小化中のウィンドウは変更しません。常時追従は、移動・リサイズしても登録した配置へ戻します。" FontSize="11" Foreground="#8993A6" TextWrapping="Wrap" Margin="0,16,0,0"/>
+     </StackPanel></ScrollViewer>
+    </Grid>
+   </Border>
+  </Grid>
+  <Grid Grid.Row="3" Margin="0,15,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock x:Name="StatusText" Text="●  監視中 · キャプチャでウィンドウを登録してください" Foreground="#62718A" TextWrapping="Wrap"/><TextBlock Grid.Column="1" Text="× で閉じてもトレイに常駐します" Foreground="#8993A6" FontSize="11" Margin="18,0,0,0"/></Grid>
+ </Grid>
+</Window>

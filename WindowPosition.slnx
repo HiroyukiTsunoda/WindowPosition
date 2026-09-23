@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/WindowPosition.App/WindowPosition.App.csproj" />
+    <Project Path="src/WindowPosition.Core/WindowPosition.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/WindowPosition.Tests/WindowPosition.Tests.csproj" />
+    <Project Path="tests/WindowPosition.Smoke/WindowPosition.Smoke.csproj" />
+  </Folder>
+</Solution>

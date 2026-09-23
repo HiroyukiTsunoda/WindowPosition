@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>WindowPosition.Smoke</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/WindowPosition.Core/WindowPosition.Core.csproj" />
+    <Compile Include="../../src/WindowPosition.App/Services/NativeMethods.cs" Link="AppServices/NativeMethods.cs" />
+    <Compile Include="../../src/WindowPosition.App/Services/NativeWindowSystem.cs" Link="AppServices/NativeWindowSystem.cs" />
+    <Compile Include="../../src/WindowPosition.App/Services/WindowCaptureService.cs" Link="AppServices/WindowCaptureService.cs" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,8 @@
+**/bin/
+**/obj/
+dist/
+artifacts/
+.vs/
+settings.cfg
+settings.cfg.corrupt.*
+.settings.cfg.*.tmp
