@@ -43,6 +43,7 @@ public sealed record RuleStatus(Guid RuleId, int MatchedCount, string Message, b
 public sealed record AppSettings
 {
     public List<WindowRule> Rules { get; init; } = [];
+    public bool StartInTray { get; init; }
 }
 
 public interface IWindowSystem

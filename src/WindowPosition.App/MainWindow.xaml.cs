@@ -32,6 +32,10 @@ public partial class MainWindow : Window
     private bool _aligning;
     private int _wheelDelta;
     private string? _lastEngineError;
+    private bool _startInTray;
+    private bool _savedStartInTray;
+
+    public bool StartInTray => _startInTray;
 
     public MainWindow()
     {
@@ -41,7 +45,9 @@ public partial class MainWindow : Window
         var settingsPath = Path.Combine(AppContext.BaseDirectory, "settings.cfg");
         _store = new SettingsStore(settingsPath);
         _loading = true;
-        foreach (var rule in _store.Load().Rules) _items.Add(CreateItem(rule));
+        var settings = _store.Load();
+        _startInTray = _savedStartInTray = settings.StartInTray;
+        foreach (var rule in settings.Rules) _items.Add(CreateItem(rule));
         App.Log.Write("SETTINGS_LOADED", $"ruleCount={_items.Count}; warning={_store.LoadWarning ?? "none"}");
         _loading = false;
         RuleList.ItemsSource = _items;
@@ -103,16 +109,22 @@ public partial class MainWindow : Window
         }
     }
 
-    private bool Persist()
+    private bool Persist(bool showErrorDialog = true)
     {
         var resumeTimer = _timer?.IsEnabled == true;
         _timer?.Stop();
-        try { _store.Save(new AppSettings { Rules = _items.Select(x => x.Rule).ToList() }); return true; }
+        try
+        {
+            _store.Save(new AppSettings { Rules = _items.Select(x => x.Rule).ToList(), StartInTray = _startInTray });
+            _savedStartInTray = _startInTray;
+            return true;
+        }
         catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException or InvalidOperationException)
         {
             App.Log.Write("SETTINGS_SAVE_ERROR", error: ex);
             SetStatus("設定を保存できません: " + ex.Message);
-            System.Windows.MessageBox.Show(this, "設定を保存できませんでした。\n" + ex.Message, "保存エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+            if (showErrorDialog)
+                System.Windows.MessageBox.Show(this, "設定を保存できませんでした。\n" + ex.Message, "保存エラー", MessageBoxButton.OK, MessageBoxImage.Error);
             return false;
         }
         finally { if (resumeTimer) _timer!.Start(); }
@@ -162,11 +174,26 @@ public partial class MainWindow : Window
         SetStatus(message);
     }
 
+    public void RestoreStartupVisibility()
+    {
+        // Never call Show/Hide on a tray startup: doing so would briefly flash the window.
+        if (!_startInTray) Show();
+    }
+
+    private void RememberVisibility(bool inTray)
+    {
+        _startInTray = inTray;
+        // A display-state change must not replace an unreadable configuration.
+        if (_savedStartInTray != _startInTray && string.IsNullOrWhiteSpace(_store.LoadWarning))
+            Persist(showErrorDialog: false);
+    }
+
     public void ShowFromTray()
     {
         App.Log.Write("WINDOW_SHOW");
         Show();
         if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
+        RememberVisibility(inTray: false);
         Activate();
     }
 
@@ -376,13 +403,15 @@ public partial class MainWindow : Window
     private void OnHide(object sender, RoutedEventArgs e) => HideToTray();
     protected override void OnClosing(CancelEventArgs e)
     {
-        if (!_exiting) { e.Cancel = true; HideToTray(); }
+        if (!_exiting && !((App)System.Windows.Application.Current).IsSessionEnding)
+        { e.Cancel = true; HideToTray(); }
         base.OnClosing(e);
     }
     private void HideToTray()
     {
         App.Log.Write("WINDOW_HIDE", "Resident monitoring continues");
         Hide();
+        RememberVisibility(inTray: true);
         if (_balloonShown) return;
         _balloonShown = true;
         _tray.ShowBalloonTip(2500, "Window Position は常駐中です", "トレイアイコンをダブルクリックすると設定を開きます。終了は右クリックメニューから。", Forms.ToolTipIcon.Info);

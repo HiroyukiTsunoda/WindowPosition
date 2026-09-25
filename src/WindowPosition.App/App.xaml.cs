@@ -11,6 +11,7 @@ public partial class App : System.Windows.Application
     private RegisteredWaitHandle? _showWait;
     internal static DiagnosticLog Log { get; } = new(Path.Combine(AppContext.BaseDirectory, "WindowPosition.log"));
     private string _exitReason = "ApplicationShutdown";
+    internal bool IsSessionEnding { get; private set; }
 
     internal void NoteExitReason(string reason)
     {
@@ -52,15 +53,17 @@ public partial class App : System.Windows.Application
             }
             catch (InvalidOperationException) when (Dispatcher.HasShutdownStarted) { }
         }, null, Timeout.Infinite, false);
-        window.Show();
-        Log.Write("READY", "Settings window shown; tray and tracking initialized");
+        window.RestoreStartupVisibility();
+        Log.Write("READY", $"startupVisibility={(window.StartInTray ? "tray" : "window")}; tray and tracking initialized");
     }
     protected override void OnSessionEnding(SessionEndingCancelEventArgs e)
     {
+        IsSessionEnding = true;
         NoteExitReason("WindowsSessionEnding:" + e.ReasonSessionEnding);
         base.OnSessionEnding(e);
         if (e.Cancel)
         {
+            IsSessionEnding = false;
             Log.Write("SESSION_END_CANCELLED");
             _exitReason = "ApplicationShutdown";
         }

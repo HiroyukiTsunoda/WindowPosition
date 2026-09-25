@@ -9,7 +9,7 @@ public sealed class SettingsStore
     private const int MaximumFileSize = 4 * 1024 * 1024;
     private const int MaximumRuleCount = 10_000;
     private const int MaximumTitleBytes = 128 * 1024;
-    private const byte FormatVersion = 1;
+    private const byte FormatVersion = 2;
     private static readonly UTF8Encoding StrictUtf8 = new(false, true);
     private readonly string _path;
     private bool _preserveSourceOnSave;
@@ -83,7 +83,8 @@ public sealed class SettingsStore
         payload.WriteByte((byte)'W');
         payload.WriteByte((byte)'P');
         payload.WriteByte(FormatVersion);
-        WriteUnsigned(payload, (uint)settings.Rules.Count);
+        // Pack the display state into the count's low bit to keep an empty cfg at 8 bytes.
+        WriteUnsigned(payload, ((uint)settings.Rules.Count << 1) | (settings.StartInTray ? 1u : 0u));
         foreach (var rule in settings.Rules)
         {
             payload.Write(rule.Id.ToByteArray());
@@ -112,7 +113,7 @@ public sealed class SettingsStore
         file.ReadExactly(data);
         if (data[0] != (byte)'W' || data[1] != (byte)'P')
             throw new InvalidDataException("設定ファイルの形式が不正です");
-        if (data[2] != FormatVersion)
+        if (data[2] is not 1 and not FormatVersion)
             throw new InvalidDataException($"未対応の設定バージョンです ({data[2]})");
         var payloadLength = data.Length - 4;
         if (Checksum(data.AsSpan(0, payloadLength)) != BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(payloadLength)))
@@ -120,7 +121,9 @@ public sealed class SettingsStore
 
         using var payload = new MemoryStream(data, 0, payloadLength, writable: false);
         payload.Position = 3;
-        var count = ReadUnsigned(payload);
+        var countAndState = ReadUnsigned(payload);
+        var startInTray = data[2] >= 2 && (countAndState & 1) != 0;
+        var count = data[2] >= 2 ? countAndState >> 1 : countAndState;
         // Every rule needs at least 23 bytes; reject impossible lengths before allocating lists/titles.
         if (count > MaximumRuleCount || count > (payload.Length - payload.Position) / 23)
             throw new InvalidDataException("設定の項目数が不正です");
@@ -158,7 +161,7 @@ public sealed class SettingsStore
         }
         if (payload.Position != payload.Length)
             throw new InvalidDataException("設定の末尾に不正なデータがあります");
-        var settings = new AppSettings { Rules = rules };
+        var settings = new AppSettings { Rules = rules, StartInTray = startInTray };
         Validate(settings);
         return settings;
     }
@@ -184,7 +187,7 @@ public sealed class SettingsStore
                 + UnsignedLength((uint)rule.Width) + UnsignedLength((uint)rule.Height)
                 + UnsignedLength((uint)titleBytes) + titleBytes;
         }
-        totalBytes += UnsignedLength((uint)settings.Rules.Count) - 1;
+        totalBytes += UnsignedLength(((uint)settings.Rules.Count << 1) | (settings.StartInTray ? 1u : 0u)) - 1;
         if (totalBytes > MaximumFileSize)
             throw new InvalidDataException("設定ファイルが大きすぎます（上限 4 MiB）");
     }

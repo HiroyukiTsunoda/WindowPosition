@@ -17,6 +17,8 @@ var tests = new (string Name, Action Run)[]
     ("ApplyNow reapplies processed windows", ImmediateApply),
     ("Invalid rules cannot move windows", InvalidRules),
     ("Settings round-trip all values and keep only one cfg", SettingsRoundTrip),
+    ("Tray startup state round-trips without enlarging an empty cfg", TrayStartupSettings),
+    ("Legacy cfg loads and migrates without losing window rules", LegacySettingsMigration),
     ("Corrupt source survives recovery and subsequent save", CorruptSettings),
     ("Invalid settings are rejected without replacing saved data", InvalidSettings),
     ("Truncated, corrupt, unsupported and oversized configs degrade gracefully", CorruptBinary),
@@ -284,6 +286,45 @@ static void CorruptSettings() => InTemporaryDirectory(directory =>
     var savedCorruptPath = Directory.GetFiles(directory, "settings.cfg.corrupt.*").Single();
     Equal(corrupt, File.ReadAllText(savedCorruptPath));
     Equal(1, store.Load().Rules.Count);
+});
+
+static void TrayStartupSettings() => InTemporaryDirectory(directory =>
+{
+    var path = Path.Combine(directory, "settings.cfg");
+    var store = new SettingsStore(path);
+    foreach (var hidden in new[] { true, false, true })
+    {
+        store.Save(new() { StartInTray = hidden });
+        Equal(hidden, store.Load().StartInTray);
+        Equal(8L, new FileInfo(path).Length);
+        var rules = Enumerable.Range(0, 64).Select(_ => Rule()).ToList();
+        store.Save(new() { StartInTray = hidden, Rules = rules });
+        var loaded = store.Load();
+        Equal(hidden, loaded.StartInTray);
+        Equal(true, rules.SequenceEqual(loaded.Rules));
+    }
+});
+
+static void LegacySettingsMigration() => InTemporaryDirectory(directory =>
+{
+    var path = Path.Combine(directory, "settings.cfg");
+    var store = new SettingsStore(path);
+    File.WriteAllBytes(path, WithChecksum([(byte)'W', (byte)'P', 1, 0]));
+    Equal(false, store.Load().StartInTray);
+    Equal<string?>(null, store.LoadWarning);
+    var rule = Rule() with { Title = "既存の設定", Mode = FollowMode.Continuous };
+    store.Save(new() { Rules = [rule] });
+    var legacyPayload = File.ReadAllBytes(path)[..^4];
+    legacyPayload[2] = 1;
+    legacyPayload[3] = 1; // v1 holds the count, not the v2 packed count/state.
+    File.WriteAllBytes(path, WithChecksum(legacyPayload));
+    var loaded = store.Load();
+    Equal<string?>(null, store.LoadWarning);
+    Equal(false, loaded.StartInTray);
+    Equal(rule, loaded.Rules.Single());
+    store.Save(loaded with { StartInTray = true });
+    Equal(true, store.Load().StartInTray);
+    Equal(rule, store.Load().Rules.Single());
 });
 
 static void InvalidSettings() => InTemporaryDirectory(directory =>

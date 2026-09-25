@@ -17,6 +17,8 @@ internal static class Program
     [STAThread]
     private static int Main(string[] args)
     {
+        if (args.Length == 4 && args[0] == "--tray-startup")
+            return TrayStartupChecks.Run(args[1], Path.GetFullPath(args[2]), Path.GetFullPath(args[3]));
         if (args.Length != 2) return 2; // output JSON path, then absolute Smoke.exe path
         // Compile the actual App/MainWindow sources; use an isolated executable
         // directory for settings and skip App.OnStartup's production singleton.
@@ -102,7 +104,7 @@ internal static class Program
         return success ? 0 : 1;
     }
 
-    private sealed class TestApplication : App.App
+    internal sealed class TestApplication : App.App
     {
         protected override void OnStartup(System.Windows.StartupEventArgs e)
         {
