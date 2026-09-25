@@ -6,3 +6,5 @@ artifacts/
 settings.cfg
 settings.cfg.corrupt.*
 .settings.cfg.*.tmp
+WindowPosition.log
+WindowPosition.log.1

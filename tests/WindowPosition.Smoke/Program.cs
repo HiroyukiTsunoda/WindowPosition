@@ -15,12 +15,12 @@ internal static class Program
         Application.SetCompatibleTextRenderingDefault(false);
         if (Option(args, "--target") is { } title)
         {
-            Application.Run(new TargetForm(title));
+            Application.Run(new TargetForm(title) { TopMost = !args.Contains("--background-target") });
             return 0;
         }
 
         var output = Path.GetFullPath(Option(args, "--output") ?? "artifacts/desktop-smoke.json");
-        var context = new DriverContext(output, Option(args, "--check-app"), Option(args, "--check-wheel"));
+        var context = new DriverContext(output, Option(args, "--check-app"), Option(args, "--check-wheel"), Option(args, "--soak-ticks"));
         var application = new System.Windows.Application { ShutdownMode = System.Windows.ShutdownMode.OnExplicitShutdown };
         application.Dispatcher.BeginInvoke(new Action(async () =>
         {
@@ -64,14 +64,16 @@ internal static class Program
         private readonly string _output;
         private readonly string? _applicationTitle;
         private readonly string? _wheelApplicationTitle;
+        private readonly string? _soakTicks;
         private readonly List<Check> _checks = [];
         private string? _screenshotPath;
 
-        internal DriverContext(string output, string? applicationTitle, string? wheelApplicationTitle)
+        internal DriverContext(string output, string? applicationTitle, string? wheelApplicationTitle, string? soakTicks)
         {
             _output = output;
             _applicationTitle = applicationTitle;
             _wheelApplicationTitle = wheelApplicationTitle;
+            _soakTicks = soakTicks;
         }
 
         internal bool Success { get; private set; }
@@ -84,7 +86,11 @@ internal static class Program
             {
                 var desktop = DesktopInterop.DesktopNames();
                 Assert("normal-user-desktop", desktop.Station.Equals("WinSta0", StringComparison.OrdinalIgnoreCase) && desktop.Desktop.Equals("Default", StringComparison.OrdinalIgnoreCase), $"{desktop.Station}\\{desktop.Desktop}");
-                if (_wheelApplicationTitle is not null)
+                if (_soakTicks is not null)
+                {
+                    await SoakChecks.RunAsync(int.Parse(_soakTicks), _output + ".samples.csv", Assert, CheckVisibleWindow);
+                }
+                else if (_wheelApplicationTitle is not null)
                 {
                     var handle = DesktopInterop.FindWindow(null, _wheelApplicationTitle);
                     Assert("wheel-application-window-found", handle != 0, _wheelApplicationTitle);

@@ -6,5 +6,6 @@
   <Folder Name="/tests/">
     <Project Path="tests/WindowPosition.Tests/WindowPosition.Tests.csproj" />
     <Project Path="tests/WindowPosition.Smoke/WindowPosition.Smoke.csproj" />
+    <Project Path="tests/WindowPosition.UiSoak/WindowPosition.UiSoak.csproj" />
   </Folder>
 </Solution>

@@ -30,7 +30,12 @@ var tests = new (string Name, Action Run)[]
     ("Invisible resize borders retain their offset at every edge", AlignInvisibleBorders),
     ("Work area excludes taskbars on every monitor edge", AlignWorkArea),
     ("Oversized windows fail without changing size or coordinates", AlignOversized),
-    ("Invalid rectangles, directions and coordinate overflows fail", AlignInvalid)
+    ("Invalid rectangles, directions and coordinate overflows fail", AlignInvalid),
+    ("Diagnostic log distinguishes clean and incomplete sessions", DiagnosticLogTests.Sessions),
+    ("Diagnostic log preserves nested exception details and abnormal exit", DiagnosticLogTests.Exceptions),
+    ("Diagnostic log rotates and bounds UTF-8 records", DiagnosticLogTests.Rotation),
+    ("Diagnostic failures never escape into the application", DiagnosticLogTests.WriteFailures),
+    ("Concurrent diagnostic events remain complete records", DiagnosticLogTests.ConcurrentWrites)
 };
 
 var failed = 0;

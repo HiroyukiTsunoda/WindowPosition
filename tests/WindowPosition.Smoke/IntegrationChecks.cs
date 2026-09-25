@@ -132,11 +132,12 @@ internal static class IntegrationChecks
         }
     }
 
-    internal static Process StartTarget(string title)
+    internal static Process StartTarget(string title, bool background = false)
     {
         var start = new ProcessStartInfo(Environment.ProcessPath!) { UseShellExecute = false };
         start.ArgumentList.Add("--target");
         start.ArgumentList.Add(title);
+        if (background) start.ArgumentList.Add("--background-target");
         return Process.Start(start) ?? throw new InvalidOperationException("Could not start temporary test target");
     }
 

@@ -42,6 +42,7 @@ public partial class MainWindow : Window
         _store = new SettingsStore(settingsPath);
         _loading = true;
         foreach (var rule in _store.Load().Rules) _items.Add(CreateItem(rule));
+        App.Log.Write("SETTINGS_LOADED", $"ruleCount={_items.Count}; warning={_store.LoadWarning ?? "none"}");
         _loading = false;
         RuleList.ItemsSource = _items;
         RefreshCount();
@@ -69,6 +70,8 @@ public partial class MainWindow : Window
             Loaded += (_, _) => Persist();
         if (!string.IsNullOrWhiteSpace(_store.LoadWarning))
             Loaded += (_, _) => { SetStatus(_store.LoadWarning); System.Windows.MessageBox.Show(this, _store.LoadWarning, "設定の読み込み", MessageBoxButton.OK, MessageBoxImage.Warning); };
+        if (App.Log.LastError is { } logError)
+            Loaded += (_, _) => SetStatus("診断ログを書き込めません: " + logError);
     }
 
     private RuleItem CreateItem(WindowRule rule) => new(rule, item =>
@@ -91,7 +94,11 @@ public partial class MainWindow : Window
         }
         catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
         {
-            if (_lastEngineError != ex.Message) SetStatus("監視エラー: " + ex.Message);
+            if (_lastEngineError != ex.Message)
+            {
+                App.Log.Write("TRACKING_ERROR", error: ex);
+                SetStatus("監視エラー: " + ex.Message);
+            }
             _lastEngineError = ex.Message;
         }
     }
@@ -103,6 +110,7 @@ public partial class MainWindow : Window
         try { _store.Save(new AppSettings { Rules = _items.Select(x => x.Rule).ToList() }); return true; }
         catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or ArgumentException or InvalidOperationException)
         {
+            App.Log.Write("SETTINGS_SAVE_ERROR", error: ex);
             SetStatus("設定を保存できません: " + ex.Message);
             System.Windows.MessageBox.Show(this, "設定を保存できませんでした。\n" + ex.Message, "保存エラー", MessageBoxButton.OK, MessageBoxImage.Error);
             return false;
@@ -156,6 +164,7 @@ public partial class MainWindow : Window
 
     public void ShowFromTray()
     {
+        App.Log.Write("WINDOW_SHOW");
         Show();
         if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
         Activate();
@@ -355,6 +364,7 @@ public partial class MainWindow : Window
     private void TogglePause()
     {
         _paused = !_paused;
+        App.Log.Write("TRACKING_STATE", _paused ? "paused" : "running");
         PauseButton.Content = _paused ? "監視を再開" : "一時停止";
         _pauseMenu.Text = _paused ? "監視を再開" : "一時停止";
         _pauseMenu.Checked = _paused;
@@ -371,6 +381,7 @@ public partial class MainWindow : Window
     }
     private void HideToTray()
     {
+        App.Log.Write("WINDOW_HIDE", "Resident monitoring continues");
         Hide();
         if (_balloonShown) return;
         _balloonShown = true;
@@ -378,6 +389,7 @@ public partial class MainWindow : Window
     }
     private void ExitApplication()
     {
+        ((App)System.Windows.Application.Current).NoteExitReason("TrayMenuExit");
         _exiting = true;
         _timer.Stop();
         _capture.Dispose();

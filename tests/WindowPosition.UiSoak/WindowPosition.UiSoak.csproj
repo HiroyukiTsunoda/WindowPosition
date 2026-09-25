@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <StartupObject>WindowPosition.UiSoak.Program</StartupObject>
+    <ApplicationManifest>../../src/WindowPosition.App/app.manifest</ApplicationManifest>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/WindowPosition.Core/WindowPosition.Core.csproj" />
+    <Compile Include="../../src/WindowPosition.App/App.xaml.cs" Link="App.xaml.cs" />
+    <Compile Include="../../src/WindowPosition.App/MainWindow.xaml.cs" Link="MainWindow.xaml.cs" />
+    <Compile Include="../../src/WindowPosition.App/Services/*.cs" Link="Services/%(Filename)%(Extension)" />
+    <ApplicationDefinition Include="../../src/WindowPosition.App/App.xaml" Link="App.xaml" />
+    <Page Include="../../src/WindowPosition.App/MainWindow.xaml" Link="MainWindow.xaml" />
+    <Resource Include="../../src/WindowPosition.App/Assets/app.ico" Link="Assets/app.ico" />
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
+</Project>
